@@ -33,10 +33,11 @@ function App() {
             <Route path='/signin' element={<Signin/>}></Route>
             <Route path='/profile' element={<Profile/>}></Route>
             <Route path='/postadd' element={<Createpost/>}></Route>
-            <Route path='/pofile/:userid' element={<Userprofile/>}></Route>
+            <Route path="/profile/:userid" element={<Userprofile />} ></Route>
             <Route path='/followingposts' element={<Followingpost/>}></Route>
             <Route path='/Createreel' element={<Createreel/>}></Route>
             <Route path='/ReelsFeed' element={<ReelsFeed/>}></Route>
+            <Route path="*" element={<div>Page Not Found</div>} />
           </Routes>
           <ToastContainer/>
           {modalOpen && <Modal setModalOpen={setModalOpen}></Modal>}

@@ -6,9 +6,7 @@ app.use(express.json())
 
 require("./config/db");
 
-app.use(cors({
-    origin: "http://localhost:5174"  
-  }));
+app.use(cors());
 
 app.use(require("./routes/user"))
 

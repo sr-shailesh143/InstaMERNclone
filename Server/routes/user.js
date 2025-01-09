@@ -16,27 +16,23 @@ router.get("/", (req, res) => {
 router.post("/api/signup", async (req, res) => {
     const { name, userName, email, password } = req.body;
     console.log(name, userName, email, password);
-    // Validate required fields
     if (!name || !email || !userName || !password) {
         return res.status(422).json({ error: "⚠️ Please fill in all the fields!" });
     }
 
     try {
-        const existingUser = await USER.findOne({
+        const existingUser = await User.findOne({
             $or: [{ email }, { userName }]
         });
 
-        // Check for existing user
         if (existingUser) {
             return res
                 .status(422)
                 .json({ error: "❌ User already exists with that email or username!" });
         }
 
-        // Hash the password
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Create a new user
         const newUser = new User({
             name,
             email,
@@ -56,7 +52,6 @@ router.post("/api/signup", async (req, res) => {
 router.post("/api/signin", async (req, res) => {
     const { email, password } = req.body;
 
-    // Validate required fields
     if (!email || !password) {
         return res.status(422).json({ error: "⚠️ Email and password are required!" });
     }
@@ -64,12 +59,10 @@ router.post("/api/signin", async (req, res) => {
     try {
         const savedUser = await User.findOne({ email });
 
-        // Check if user exists
         if (!savedUser) {
             return res.status(401).json({ error: "❌ Invalid email. Please try again!" });
         }
 
-        // Validate password
         const isPasswordMatch = await bcrypt.compare(password, savedUser.password);
 
         if (isPasswordMatch) {

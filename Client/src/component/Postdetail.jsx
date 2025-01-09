@@ -2,28 +2,33 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
-export default function Postsdetail({ item, toggleDetails }) {
+export default function Postdetail({ item, toggleDetails }) {
   const navigate = useNavigate();
 
-  // Toast functions
-  const notifyA = (msg) => toast.error(msg);
-  const notifyB = (msg) => toast.success(msg);
+  const notifySuccess = (msg) => toast.success(msg);
+  const notifyError = (msg) => toast.error(msg);
 
-  const removePost = (postId) => {
-    if (window.confirm("Do you really want to delete this post ?")) {
-      fetch(`${import.meta.env.VITE_BACKEND_URL}/deletePost/${postId}`, {
-        method: "delete",
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("jwt"),
-        },
-      })
-        .then((res) => res.json())
-        .then((result) => {
-          console.log(result);
+  const removePost = async (postId) => {
+    if (window.confirm("Do you really want to delete this post?")) {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/deletePost/${postId}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: "Bearer " + localStorage.getItem("jwt"),
+          },
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          notifySuccess(result.message);
           toggleDetails();
           navigate("/");
-          notifyB(result.message);
-        });
+        } else {
+          notifyError(result.error || "Failed to delete the post.");
+        }
+      } catch (error) {
+        notifyError("Something went wrong. Please try again.");
+      }
     }
   };
 
@@ -32,20 +37,16 @@ export default function Postsdetail({ item, toggleDetails }) {
       <div className="bg-white rounded-lg shadow-lg w-11/12 md:w-3/4 lg:w-1/2 overflow-hidden relative">
         {/* Post Image */}
         <div className="bg-gray-900 flex items-center justify-center h-64">
-          <img
-            src={item.photo}
-            alt="Post"
-            className="object-contain h-full w-full"
-          />
+          <img src={item.photo || '/default-image.jpg'} alt="Post" className="object-contain h-full w-full" />
         </div>
 
-        {/* Details Section */}
+        {/* Post Details */}
         <div className="p-4 space-y-4">
-          {/* Card Header */}
+          {/* Header */}
           <div className="flex items-center justify-between border-b pb-2">
             <div className="flex items-center gap-3">
               <img
-                src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8cGVyc29ufGVufDB8MnwwfHw%3D&auto=format&fit=crop&w=500&q=60"
+                src={item.postedBy.photo || '/default-profile.jpg'}
                 alt="User"
                 className="w-10 h-10 rounded-full"
               />
@@ -59,23 +60,26 @@ export default function Postsdetail({ item, toggleDetails }) {
             </button>
           </div>
 
-          {/* Comments Section */}
+          {/* Comments */}
           <div className="space-y-2 border-b pb-2">
-            {item.comments.map((comment, index) => (
-              <p key={index} className="text-sm">
-                <span className="font-bold">{comment.postedBy.name}</span>: {" "}
-                {comment.comment}
-              </p>
-            ))}
+            {(item.comments && item.comments.length > 0) ? (
+              item.comments.map((comment, index) => (
+                <p key={index} className="text-sm">
+                  <span className="font-bold">{comment.postedBy.name}</span>: {comment.text}
+                </p>
+              ))
+            ) : (
+              <p>No comments yet.</p>
+            )}
           </div>
 
           {/* Post Content */}
           <div className="space-y-2">
             <p className="font-semibold">{item.likes.length} Likes</p>
-            <p>{item.body}</p>
+            <p>{item.body || "No content available."}</p>
           </div>
 
-          {/* Add Comment Section */}
+          {/* Add Comment */}
           <div className="flex items-center gap-3">
             <span className="material-symbols-outlined text-gray-500">mood</span>
             <input

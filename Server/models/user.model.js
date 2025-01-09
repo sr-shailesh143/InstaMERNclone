@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
+const { Schema } = mongoose; 
 
 // Define the User schema
-const userSchema = new mongoose.Schema({
+const userSchema = new Schema({
     name: {
         type: String,
         required: true,
@@ -32,9 +33,10 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    followers: [{ type: Schema.Types.ObjectId, ref: "User" }], 
+    following: [{ type: Schema.Types.ObjectId, ref: "User" }],
 });
 
-// Create the User model
 const User = mongoose.model("User", userSchema);
 
 module.exports = User;

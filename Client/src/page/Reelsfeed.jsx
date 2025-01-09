@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FaHeart, FaRegHeart, FaComment } from "react-icons/fa"; // Import icons
+import { FaHeart, FaRegHeart, FaComment, FaTrashAlt } from "react-icons/fa";
 
 export default function ReelsFeed() {
   const [reels, setReels] = useState([]);
   const [comment, setComment] = useState("");
-  const token = localStorage.getItem("jwt"); // Get the token from localStorage
+  const token = localStorage.getItem("jwt"); 
 
   const fetchReels = async () => {
     try {
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/all`, {
         headers: {
-          Authorization: `Bearer ${token}`, // Add the token here
+          Authorization: `Bearer ${token}`, 
         },
       });
       setReels(response.data.reels);
@@ -23,16 +23,16 @@ export default function ReelsFeed() {
 
   const handleLike = async (reelId) => {
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/reels/like/${reelId}`,
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/like/${reelId}`,
         {},
         {
           headers: {
-            Authorization: `Bearer ${token}`, // Add the token here
+            Authorization: `Bearer ${token}`,
           },
         }
       );
-      fetchReels(); // Re-fetch reels after liking/unliking
+      fetchReels(); 
     } catch (err) {
       console.error(err);
       alert("Failed to like/unlike reel.");
@@ -42,8 +42,8 @@ export default function ReelsFeed() {
   const handleComment = async (reelId) => {
     if (!comment) return;
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/reels/comment/${reelId}`,
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/comment/${reelId}`,
         { comment },
         {
           headers: {
@@ -51,11 +51,44 @@ export default function ReelsFeed() {
           },
         }
       );
-      fetchReels(); 
-      setComment(""); 
+      fetchReels();
+      setComment("");
     } catch (err) {
       console.error(err);
       alert("Failed to post comment.");
+    }
+  };
+
+  const handleDeleteReel = async (reelId) => {
+    try {
+      await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/delete/${reelId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      fetchReels(); 
+      alert("Reel deleted successfully.");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete reel.");
+    }
+  };
+
+  const handleDeleteComment = async (reelId, commentId) => {
+    try {
+      await axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/comment/${reelId}/${commentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      fetchReels(); 
+      alert("Comment deleted successfully.");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete comment.");
     }
   };
 
@@ -64,68 +97,79 @@ export default function ReelsFeed() {
   }, []);
 
   return (
-    <div className="reels-feed max-w-screen-lg mx-auto p-5">
+    <div className="reels-feed max-w-screen-md mx-auto p-4">
       <h1 className="text-center font-bold text-2xl mb-6">Reels Feed</h1>
-      <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
         {reels.map((reel) => (
           <div
             key={reel._id}
-            className="reel-card border rounded-lg shadow-md p-4 bg-white hover:shadow-lg transition-shadow duration-300"
+            className="reel-card border rounded-lg shadow-md bg-white overflow-hidden"
           >
-            {/* Debugging: Log the video URL */}
-            {console.log(reel.videoUrl)}
-
             {/* Video Section */}
-            {reel.videoUrl ? (
+            <div className="relative">
               <video
                 src={reel.videoUrl}
                 controls
-                className="w-full h-64 object-cover rounded-lg mb-4"
+                className="w-full h-64 object-cover"
               />
-            ) : (
-              <p className="text-red-500">Video not available</p>
-            )}
+              <button
+                onClick={() => handleDeleteReel(reel._id)}
+                className="absolute top-2 right-2 text-red-600 bg-white rounded-full p-2 shadow hover:bg-gray-100 transition"
+              >
+                <FaTrashAlt />
+              </button>
+            </div>
 
-            <p className="text-sm mb-4">{reel.caption}</p>
+            {/* Caption */}
+            <p className="text-sm mt-2 px-4">{reel.caption}</p>
 
-            {/* Like/Unlike Button with Icon */}
-            <div className="flex items-center space-x-4 mb-4">
+            {/* Like/Unlike */}
+            <div className="flex items-center space-x-4 mt-2 px-4">
               <button
                 onClick={() => handleLike(reel._id)}
                 className={`text-xl ${
                   reel.isLiked ? "text-red-500" : "text-gray-500"
-                } hover:text-red-600 transition-colors duration-200`}
+                } hover:text-red-600 transition`}
               >
                 {reel.isLiked ? <FaHeart /> : <FaRegHeart />}
               </button>
               <span>{reel.likesCount} Likes</span>
             </div>
 
-            {/* Comments Section */}
-            <div className="comments-section mt-4">
-              <div className="comment-input flex items-center space-x-2 mb-4">
+            {/* Comments */}
+            <div className="mt-4 px-4">
+              <div className="flex items-center space-x-2 mb-2">
                 <input
                   type="text"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Add a comment..."
-                  className="border p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border p-2 rounded w-full focus:ring focus:ring-blue-400"
                 />
                 <button
                   onClick={() => handleComment(reel._id)}
-                  className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition-colors duration-200"
+                  className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition"
                 >
                   <FaComment />
                 </button>
               </div>
 
               {/* Display Comments */}
-              <div className="comments mt-2">
-                {reel.comments.map((comment, index) => (
-                  <div key={index} className="comment-item mb-2">
-                    <p className="text-sm">
+              <div className="space-y-2">
+                {reel.comments.map((comment) => (
+                  <div
+                    key={comment._id}
+                    className="flex justify-between items-center text-sm border-b pb-2"
+                  >
+                    <p>
                       <strong>{comment.user.name}:</strong> {comment.text}
                     </p>
+                    <button
+                      onClick={() => handleDeleteComment(reel._id, comment._id)}
+                      className="text-red-500 hover:text-red-600 transition"
+                    >
+                      <FaTrashAlt />
+                    </button>
                   </div>
                 ))}
               </div>

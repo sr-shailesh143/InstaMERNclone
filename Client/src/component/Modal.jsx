@@ -11,7 +11,7 @@ export default function Modal({ setModalOpen }) {
     >
       <div
         className="bg-white rounded-lg shadow-lg max-w-sm w-full p-6 relative flex flex-col items-center"
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+        onClick={(e) => e.stopPropagation()} 
       >
         {/* Modal Header */}
         <div className="w-full flex justify-between items-center mb-4">

@@ -3,7 +3,7 @@ const Reel = require('../models/reels.model');
 module.exports.createReel = async (req, res) => {
   try {
     const { caption } = req.body;
-    const videoUrl = req.file.path; // Assuming multer is used for video uploads
+    const videoUrl = req.file.path;
     const userId = req.user._id;
 
     const reel = new Reel({ caption, videoUrl, user: userId });
@@ -62,5 +62,55 @@ module.exports.commentOnReel = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '⚠️ Could not comment on reel.' });
+  }
+};
+
+exports.deleteReel = async (req, res) => {
+  const { reelId } = req.params;  
+
+  try {
+    const reel = await Reel.findByIdAndDelete(reelId);
+
+    if (!reel) {
+      return res.status(404).json({ message: "Reel not found" });
+    }
+
+    res.status(200).json({ message: "Reel deleted successfully" });
+  } catch (error) {
+    console.error('Error deleting reel:', error);
+    res.status(500).json({ message: 'Failed to delete reel' });
+  }
+};
+
+
+
+module.exports.deleteComment = async (req, res) => {
+  const { reelId, commentId } = req.params;
+  const userId = req.user._id;
+
+  try {
+    const reel = await Reel.findById(reelId);
+
+    if (!reel) return res.status(404).json({ message: "Reel not found" });
+
+    const commentIndex = reel.comments.findIndex(
+      (comment) => comment._id.toString() === commentId.toString()
+    );
+
+    if (commentIndex === -1) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    if (reel.comments[commentIndex].user.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Unauthorized to delete this comment" });
+    }
+
+    reel.comments.splice(commentIndex, 1);
+    await reel.save();
+
+    res.status(200).json({ message: "Comment deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting comment:", err);
+    res.status(500).json({ message: "Failed to delete comment" });
   }
 };

@@ -8,42 +8,38 @@ export default function Followingpost() {
   const [data, setData] = useState([]);
   const [comment, setComment] = useState("");
   const [show, setShow] = useState(false);
-  const [item, setItem] = useState([]);
-
-  // Toast functions
+  const [item, setItem] = useState(null); 
+  
   const notifyA = (msg) => toast.error(msg);
   const notifyB = (msg) => toast.success(msg);
-
+  
   useEffect(() => {
     const token = localStorage.getItem("jwt");
     if (!token) {
       navigate("./signup");
     }
-
-    // Fetching all posts
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/myfollwingpost`, {
+  
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/myfollowingpost`, {
       headers: {
         Authorization: "Bearer " + localStorage.getItem("jwt"),
       },
     })
-      .then((res) => res.json())
-      .then((result) => {
-        console.log(result);
-        setData(result);
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch posts");
+        }
+        return res.json();
       })
-      .catch((err) => console.log(err));
+      .then((result) => {
+        setData(result); 
+        console.log(result); 
+      })
+      .catch((err) => {
+        console.log(err);
+        notifyA("Failed to load posts");
+      });
   }, []);
-
-  // to show and hide comments
-  const toggleComment = (posts) => {
-    if (show) {
-      setShow(false);
-    } else {
-      setShow(true);
-      setItem(posts);
-    }
-  };
-
+  
   const likePost = (id) => {
     fetch(`${import.meta.env.VITE_BACKEND_URL}/like`, {
       method: "put",
@@ -58,16 +54,17 @@ export default function Followingpost() {
       .then((res) => res.json())
       .then((result) => {
         const newData = data.map((posts) => {
-          if (posts._id == result._id) {
+          if (posts._id === result._id) {
             return result;
           } else {
             return posts;
           }
         });
         setData(newData);
-        console.log(result);
-      });
+      })
+      .catch((err) => console.log(err));
   };
+  
   const unlikePost = (id) => {
     fetch(`${import.meta.env.VITE_BACKEND_URL}/unlike`, {
       method: "put",
@@ -82,18 +79,17 @@ export default function Followingpost() {
       .then((res) => res.json())
       .then((result) => {
         const newData = data.map((posts) => {
-          if (posts._id == result._id) {
+          if (posts._id === result._id) {
             return result;
           } else {
             return posts;
           }
         });
         setData(newData);
-        console.log(result);
-      });
+      })
+      .catch((err) => console.log(err));
   };
 
-  // function to make comment
   const makeComment = (text, id) => {
     fetch(`${import.meta.env.VITE_BACKEND_URL}/comment`, {
       method: "put",
@@ -109,7 +105,7 @@ export default function Followingpost() {
       .then((res) => res.json())
       .then((result) => {
         const newData = data.map((posts) => {
-          if (posts._id == result._id) {
+          if (posts._id === result._id) {
             return result;
           } else {
             return posts;
@@ -118,8 +114,13 @@ export default function Followingpost() {
         setData(newData);
         setComment("");
         notifyB("Comment posted");
-        console.log(result);
-      });
+      })
+      .catch((err) => console.log(err));
+  };
+
+  const toggleComment = (post) => {
+    setShow(!show);
+    setItem(post); 
   };
 
   return (
@@ -140,8 +141,9 @@ export default function Followingpost() {
               />
             </div>
             <h5 className="text-lg font-semibold">
-              <Link to={`/profile/${posts.postedBy._id}`} className="hover:underline">
-                {posts.postedBy.name}
+              {/* Add optional chaining to prevent undefined errors */}
+              <Link to={`/profile/${posts.createdBy?._id}`} className="hover:underline">
+                {posts.createdBy?.name || "Unknown User"}
               </Link>
             </h5>
           </div>
@@ -149,7 +151,7 @@ export default function Followingpost() {
           {/* Card Image */}
           <div className="card-image">
             <img
-              src={posts.photo}
+              src={posts.image}
               alt="Post"
               className="w-full object-cover max-h-72"
             />
@@ -157,8 +159,8 @@ export default function Followingpost() {
 
           {/* Card Content */}
           <div className="card-content p-4">
-            {posts.likes.includes(
-              JSON.parse(localStorage.getItem("user"))._id
+            {Array.isArray(posts.likedBy) && posts.likedBy.includes(
+              JSON.parse(localStorage.getItem("user"))?._id
             ) ? (
               <span
                 className="material-symbols-outlined text-red-500 cursor-pointer"
@@ -175,8 +177,8 @@ export default function Followingpost() {
               </span>
             )}
 
-            <p className="text-gray-700 font-medium mt-2">{posts.likes.length} Likes</p>
-            <p className="text-gray-800 mt-1">{posts.body}</p>
+            <p className="text-gray-700 font-medium mt-2">{posts.likedBy?.length || 0} Likes</p>
+            <p className="text-gray-800 mt-1">{posts.content}</p>
             <p
               className="text-blue-500 font-semibold mt-2 cursor-pointer hover:underline"
               onClick={() => toggleComment(posts)}
@@ -205,12 +207,12 @@ export default function Followingpost() {
         </div>
       ))}
 
-      {/* Show Comment */}
+      {/* Show Comment Modal */}
       {show && item && (
         <div className="showComment fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
           <div className="container bg-white rounded-lg shadow-lg max-w-2xl w-full overflow-hidden">
             <div className="postPic bg-gray-800">
-              <img src={item.photo} alt="Post" className="w-full object-cover" />
+              <img src={item.image} alt="Post" className="w-full object-cover" />
             </div>
             <div className="details p-4 flex flex-col">
               {/* Card Header */}
@@ -222,23 +224,23 @@ export default function Followingpost() {
                     className="rounded-full"
                   />
                 </div>
-                <h5 className="text-lg font-semibold">{item.postedBy.name}</h5>
+                <h5 className="text-lg font-semibold">{item.createdBy?.name || "Unknown User"}</h5>
               </div>
 
               {/* Comment Section */}
               <div className="comment-section flex-grow py-4 border-b border-gray-200">
-                {item.comments.map((comment, index) => (
+                {item.feedback?.map((comment, index) => (
                   <p key={index} className="text-gray-800">
-                    <span className="font-bold mr-2">{comment.postedBy.name}</span>
-                    {comment.comment}
+                    <span className="font-bold mr-2">{comment.author?.name || "Unknown User"}</span>
+                    {comment.text}
                   </p>
                 ))}
               </div>
 
               {/* Card Content */}
               <div className="card-content py-4">
-                <p className="text-gray-700 font-medium">{item.likes.length} Likes</p>
-                <p className="text-gray-800 mt-1">{item.body}</p>
+                <p className="text-gray-700 font-medium">{item.likedBy?.length || 0} Likes</p>
+                <p className="text-gray-800 mt-1">{item.content}</p>
               </div>
 
               {/* Add Comment */}
@@ -255,7 +257,7 @@ export default function Followingpost() {
                   className="ml-4 text-blue-500 font-semibold hover:underline"
                   onClick={() => {
                     makeComment(comment, item._id);
-                    toggleComment();
+                    toggleComment(null); 
                   }}
                 >
                   Post
@@ -265,7 +267,7 @@ export default function Followingpost() {
           </div>
           <button
             className="close-comment absolute top-5 right-5 text-white text-3xl font-bold"
-            onClick={() => toggleComment()}
+            onClick={() => toggleComment(null)} 
           >
             ×
           </button>

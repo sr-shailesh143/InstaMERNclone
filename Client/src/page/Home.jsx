@@ -28,6 +28,7 @@ export default function Home() {
         return res.json();
       })
       .then((result) => {
+        console.log("Fetched posts:", result); 
         setData(Array.isArray(result) ? result : []);
         setLoading(false);
       })
@@ -36,6 +37,7 @@ export default function Home() {
         setLoading(false);
       });
   }, []);
+  
 
   const toggleComment = (posts) => {
     setShow(!show);
@@ -78,25 +80,38 @@ export default function Home() {
       });
   };
 
-  const makeComment = (text, id) => {
+  const makeComment = (text, postId) => {
     fetch(`${import.meta.env.VITE_BACKEND_URL}/comment`, {
-      method: "put",
+      method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + localStorage.getItem("jwt"),
       },
-      body: JSON.stringify({ text, postId: id }),
+      body: JSON.stringify({ text, postId }),
     })
       .then((res) => res.json())
       .then((result) => {
-        const newData = data.map((posts) =>
-          posts._id === result._id ? result : posts
-        );
-        setData(newData);
-        setfeedback("");
-        notifyB("Comment posted");
+        if (result && result.post) {
+          setItem((prevItem) => ({
+            ...prevItem,
+            feedback: result.post.feedback || [],
+          }));
+          setfeedback(""); 
+          notifyB(result.message || "Comment added successfully");
+        } else {
+          console.error("Unexpected response:", result);
+          notifyA("Failed to add comment");
+        }
+      })
+      .catch((err) => {
+        console.error("Error posting comment:", err);
+        notifyA("Failed to post comment");
       });
   };
+  
+  
+  
+  
 
   return (
     <div className="bg-gray-100 min-h-screen p-4">
@@ -108,11 +123,11 @@ export default function Home() {
             <div className="flex items-center px-4 py-2">
               <img
                 className="w-10 h-10 rounded-full"
-                src={posts.image ? posts.image : picLink}
+                src={posts.createdBy.image || picLink}
                 alt="profile"
               />
               <h5 className="ml-3 font-semibold text-gray-800">
-                <Link to={`/profile/${posts?.postedBy?._id}`}>{posts?.postedBy?.name}</Link>
+                <Link to={`/profile/${posts?.createdBy?._id}`}>{posts?.createdBy?.name || "Unknown User"}</Link>
               </h5>
             </div>
             <img className="w-full" src={posts.image} alt="Post" />
@@ -168,52 +183,57 @@ export default function Home() {
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
     <div className="bg-white rounded-lg shadow-lg w-11/12 md:w-8/12 lg:w-6/12 p-4">
       {/* Post Image */}
-      <div className="mb-4">
-        <img className="w-full rounded" src={item.image} alt="Post" />
-      </div>
+<div className="mb-4">
+  <img className="w-full rounded" src={item.image} alt="Post" />
+</div>
 
-      {/* Posted By User */}
-      <div className="mb-4">
-        <h5 className="font-semibold">{item?.postedBy?.name}</h5>
-      </div>
+{/* Posted By User */}
+<div className="mb-4">
+  <h5 className="font-semibold">{item?.createdBy?.name || "Unknown User"}</h5>
+</div>
 
-      {/* Feedback Section */}
-      <div className="overflow-y-auto max-h-40">
-        {Array.isArray(item.feedback) && item.feedback.length > 0 ? (
-          item.feedback.map((feedback, index) => (
-            <p key={index} className="text-gray-700">
-              <span className="font-bold">{feedback?.postedBy?.name}:</span> {feedback?.feedback}
-            </p>
-          ))
-        ) : (
-          <p className="text-gray-500">No comments yet</p>
-        )}
-      </div>
+{/* Feedback Section */}
+<div className="overflow-y-auto max-h-40">
+  {Array.isArray(item.feedback) && item.feedback.length > 0 ? (
+    item.feedback.map((feedback, index) => (
+      <p key={index} className="text-gray-700">
+        <span className="font-bold">{feedback?.author?.name || "Anonymous"}:</span>{" "}
+        {feedback?.text || ""}
+      </p>
+    ))
+  ) : (
+    <p className="text-gray-500">No comments yet</p>
+  )}
+</div>
 
-      {/* Add Comment Section */}
-      <div className="flex items-center mt-4">
-        <input
-          type="text"
-          placeholder="Add a comment"
-          className="flex-1 border border-gray-300 rounded p-2"
-          value={feedback}
-          onChange={(e) => setfeedback(e.target.value)}
-        />
-        <button
-          className="ml-2 bg-blue-500 text-white px-4 py-2 rounded"
-          onClick={() => {
-            makeComment(feedback, item._id); // Make the comment
-            toggleComment(); // Hide the comment modal
-          }}
-        >
-          Post
-        </button>
-      </div>
+
+
+
+
+{/* Add Comment Section */}
+<div className="flex items-center mt-4">
+  <input
+    type="text"
+    placeholder="Add a comment"
+    className="flex-1 border border-gray-300 rounded p-2"
+    value={feedback}
+    onChange={(e) => setfeedback(e.target.value)}
+  />
+  <button
+    className="ml-2 bg-blue-500 text-white px-4 py-2 rounded"
+    onClick={() => {
+      makeComment(feedback, item._id);
+      toggleComment(); 
+    }}
+  >
+    Post
+  </button>
+</div>
 
       {/* Close Button */}
       <button
         className="absolute top-2 right-2 text-red-500 text-xl"
-        onClick={() => toggleComment()} // Close the modal
+        onClick={() => toggleComment()} 
       >
         ✖
       </button>
