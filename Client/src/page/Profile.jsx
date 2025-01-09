@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Postdetail from "../component/Postdetail";
-import ProfileImg from "../component/ProfileImg";
+import ProfileImg from "../component/ProfileImg.jsx"; 
 import { toast } from "react-toastify";
 
 export default function Profile() {
