@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Postdetail from "../component/Postdetail";
-import ProfileImg from "../component/ProfileImg.jsx"; 
+import Profileimg from "../component/Profileimg"; 
 import { toast } from "react-toastify";
 
 export default function Profile() {
@@ -131,7 +131,7 @@ export default function Profile() {
       </div>
 
       {show && <Postdetail item={selectedPost} toggleDetails={toggleDetails} />}
-      {changePic && <ProfileImg refreshProfile={fetchUserProfile} changeProfile={changeProfile} />}
+      {changePic && <Profileimg refreshProfile={fetchUserProfile} changeProfile={changeProfile} />}
     </div>
   );
 }
